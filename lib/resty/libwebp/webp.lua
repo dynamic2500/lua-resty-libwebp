@@ -28,7 +28,6 @@ local function compress(img)
 		local pic = ffi.new'WebPPicture[1]'
 		local wrt = ffi.new'WebPMemoryWriter[1]'
 		local config = ffi.new'WebPConfig[1]'
---		libwebp.WebPConfigInitInternal(config,3,75,0x020e)
 		for option,value in pairs (img.compress) do
 			if (option ~= "outfile") then
 				config[0][option] = value
@@ -47,7 +46,7 @@ local function compress(img)
 		  pic[0].custom_ptr = wrt;
 
 		libwebp.WebPMemoryWriterInit(wrt)
-		local ok = libwebp.WebPPictureImportRGB(pic, img.raw_rgba_pixels, img.stride) and libwebp.WebPEncode(config, pic)
+		local ok = libwebp.WebPPictureImportRGBA(pic, img.raw_rgba_pixels, img.stride) and libwebp.WebPEncode(config, pic)
 		libwebp.WebPPictureFree(pic)
 		if ok == 0 then
 			libwebp.WebPMemoryWriterClear(wrt)
@@ -111,6 +110,7 @@ local function load(data)
 			end
 		end
 	end
+	WebPDecoderConfig.output.colorspace = 1;
 	libwebp.WebPDecode(data, #data, WebPDecoderConfig)
 	local compress_options = {
 		quality = 75,
