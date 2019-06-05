@@ -2,7 +2,7 @@ local _M = {
 	name = "libwebp ffi module"
 }
 
-local ffi = require('ffi')
+local ffi = require("ffi")
 local libwebp = require ("resty.libwebp.libwebp")
 
 local decode_config = {
@@ -25,12 +25,12 @@ local decode_config = {
 local function compress(img)
 	local return_data = ""
 	if (img.compressed_data == nil) then
-		local pic = ffi.new'WebPPicture[1]'
-		local wrt = ffi.new'WebPMemoryWriter[1]'
-		local config = ffi.new'WebPConfig[1]'
+		local pic = ffi.new("WebPPicture")
+		local wrt = ffi.new("WebPMemoryWriter")
+		local config = ffi.new("WebPConfig")
 		for option,value in pairs (img.compress) do
 			if (option ~= "outfile") then
-				config[0][option] = value
+				config[option] = value
 			end
 
 		end
@@ -39,11 +39,11 @@ local function compress(img)
 		end
 
 		-- Only use use_argb if we really need it, as it's slower.
-		  pic[0].use_argb = config[0].lossless or config[0].use_sharp_yuv or config[0].preprocessing > 0
-		  pic[0].width = img.width;
-		  pic[0].height = img.height;
-		  pic[0].writer = libwebp.WebPMemoryWrite;
-		  pic[0].custom_ptr = wrt;
+		pic.use_argb = config.lossless or config.use_sharp_yuv or config.preprocessing > 0
+		pic.width = img.width;
+		pic.height = img.height;
+		pic.writer = libwebp.WebPMemoryWrite;
+		pic.custom_ptr = wrt;
 
 		libwebp.WebPMemoryWriterInit(wrt)
 		local ok = libwebp.WebPPictureImportRGBA(pic, img.raw_rgba_pixels, img.stride) and libwebp.WebPEncode(config, pic)
@@ -65,8 +65,8 @@ local function compress(img)
 			VP8_ENC_ERROR_USER_ABORT,               // abort request by user
 			VP8_ENC_ERROR_LAST                      // list terminator. always last.--]]
 		end
-		return_data = ffi.string(wrt[0].mem,tonumber(wrt[0].size))
-		local last_result = wrt[0].mem
+		return_data = ffi.string(wrt.mem,tonumber(wrt.size))
+		local last_result = wrt.mem
 		libwebp.WebPFree(last_result)
 		img.compressed_data = return_data
 	else
@@ -110,7 +110,7 @@ local function load(data)
 			end
 		end
 	end
-	WebPDecoderConfig.output.colorspace = 1;
+	WebPDecoderConfig.output.colorspace = 1; -- force decode rgba8, referrence enum WEBP_CSP_MODE
 	libwebp.WebPDecode(data, #data, WebPDecoderConfig)
 	local compress_options = {
 		quality = 75,
@@ -161,7 +161,7 @@ end
 
 local function load_from_disk(infile)
 	local f = io.open(infile, "rb")
-	local blob, err = f:read("*all")
+	local blob = f:read("*all")
 	f:close()
 	if (blob) then
 		return load(blob)
