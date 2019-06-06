@@ -5,7 +5,7 @@ local _M = {
 local ffi = require("ffi")
 local libwebp = require ("resty.libwebp.libwebp")
 
-local decode_config = {
+local decompress_config = {
 	bypass_filtering = true,
 	no_fancy_upsampling = true,
 	scaled_width = nil,
@@ -38,6 +38,7 @@ local function compress(img)
 			return nil
 		end
 
+
 		-- Only use use_argb if we really need it, as it's slower.
 		pic.use_argb = config.lossless or config.use_sharp_yuv or config.preprocessing > 0
 		pic.width = img.width;
@@ -45,8 +46,16 @@ local function compress(img)
 		pic.writer = libwebp.WebPMemoryWrite;
 		pic.custom_ptr = wrt;
 
+        local pictureImport = {
+            RGB = function()return libwebp.WebPPictureImportRGB(pic, img.raw_rgba_pixels, img.stride)  and libwebp.WebPEncode(config, pic) end,
+            RGBA = function()return libwebp.WebPPictureImportRGBA(pic, img.raw_rgba_pixels, img.stride)  and libwebp.WebPEncode(config, pic) end,
+            BGR = function()return libwebp.WebPPictureImportBGR(pic, img.raw_rgba_pixels, img.stride)  and libwebp.WebPEncode(config, pic) end,
+            BGRA = function()return libwebp.WebPPictureImportBGRA(pic, img.raw_rgba_pixels, img.stride)  and libwebp.WebPEncode(config, pic) end,
+        }
+
 		libwebp.WebPMemoryWriterInit(wrt)
-		local ok = libwebp.WebPPictureImportRGBA(pic, img.raw_rgba_pixels, img.stride) and libwebp.WebPEncode(config, pic)
+		local ok = pictureImport[img.format]()
+--		local ok = libwebp.WebPPictureImportRGBA(pic, img.raw_rgba_pixels, img.stride) and libwebp.WebPEncode(config, pic)
 		libwebp.WebPPictureFree(pic)
 		if ok == 0 then
 			libwebp.WebPMemoryWriterClear(wrt)
@@ -100,17 +109,38 @@ local function get_blob(img)
 end
 
 local function load(data)
+    local WEBP_CSP_MODE = {
+        RGB = 0,
+        RGBA = 1,
+        BGR = 2,
+        BGRA = 3,
+--        ARGB = 4,
+--        RGBA_4444 = 5,
+--        RGB_565 = 6,
+--        rgbA = 7,
+--        bgrA = 8,
+--        Argb = 9,
+--        rgbA_4444 = 10,
+--        YUV = 11,
+--        YUVA = 12,
+--        LAST = 13
+    }
 	local WebPDecoderConfig = ffi.new("WebPDecoderConfig")
 	libwebp.WebPInitDecoderConfigInternal(WebPDecoderConfig,0x0208)
-	for option, value in pairs (decode_config) do
+    local colorspace = "RGBA" -- default decode colorspace, referrence enum WEBP_CSP_MODE
+	for option, value in pairs (decompress_config) do
 		if (value) then
-			WebPDecoderConfig.options[option] = value
-			if (option == "scaled_width" or option == "scaled_height") then
-				WebPDecoderConfig.options.use_scaling = true
-			end
+            if (option == "colorspace") then
+                colorspace = value
+            else
+                WebPDecoderConfig.options[option] = value
+                if (option == "scaled_width" or option == "scaled_height") then
+                    WebPDecoderConfig.options.use_scaling = true
+                end
+            end
 		end
-	end
-	WebPDecoderConfig.output.colorspace = 1; -- force decode rgba8, referrence enum WEBP_CSP_MODE
+    end
+    WebPDecoderConfig.output.colorspace = assert(WEBP_CSP_MODE[colorspace],"can not found colorspace")
 	libwebp.WebPDecode(data, #data, WebPDecoderConfig)
 	local compress_options = {
 		quality = 75,
@@ -147,6 +177,7 @@ local function load(data)
 		stride = WebPDecoderConfig.output.u.RGBA.stride,
 		width = WebPDecoderConfig.output.width,
 		height= WebPDecoderConfig.output.height,
+        format = colorspace,
 		compress = compress_options,
 		compressed_data = nil,
 	}
@@ -170,7 +201,7 @@ local function load_from_disk(infile)
 	end
 end
 
-_M.decode = decode_config
+_M.decompress = decompress_config
 _M.load_blob = load_blob
 _M.load_from_disk = load_from_disk
 return _M
