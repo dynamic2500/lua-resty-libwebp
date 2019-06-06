@@ -25,16 +25,18 @@ A ffi binding for the [libwebp](https://chromium.googlesource.com/webm/libwebp) 
 ### `libwebp.decompress.[opt]`
 
 Set settings for decompress process. `opt` are some options as follow:
-	* `bypass_filtering<boolean>`: if true, skip the in-loop filtering
-	* `no_fancy_upsampling<boolean>`:  if true, use faster pointwise upsampler
-	* `scaled_width<int>`: scale image to width pixel (keep aspect ratio)
-	* `scaled_height<int>`: scale image to height pixel (keep aspect ratio)
-	* `use_threads<boolean>`:  if true, use multi-threaded decoding
-	* `dithering_strength<int>`: `0..100` range. = 0=off, 100=full
-	* `alpha_dithering_strength<int>`: `0..100` range. Alpha dithering strength
-	* `format`: RGB, RGBA, BRG, BRGA
-	
 
+
+* `bypass_filtering<boolean>`: if true, skip the in-loop filtering
+* `no_fancy_upsampling<boolean>`:  if true, use faster pointwise upsampler
+* `scaled_width<int>`: scale image to width pixel (keep aspect ratio)
+* `scaled_height<int>`: scale image to height pixel (keep aspect ratio)
+* `use_threads<boolean>`:  if true, use multi-threaded decoding
+* `dithering_strength<int>`: `0..100` range. = 0=off, 100=full
+* `alpha_dithering_strength<int>`: `0..100` range. Alpha dithering strength
+* `format`: RGB, RGBA, BRG, BRGA
+	
+------------------------------------ -----------------------------------------
 ### `libwebp.load_blob(blob) -> img`
 ### `libwebp.load_from_disk(infile) -> img`
 
@@ -43,12 +45,12 @@ Open a PNG image and read its header. `blob` is whole image binary string or `in
 The return value is an image object which gives information about the file
 and can be used to load and decode the actual pixels. It has the fields:
 
-  * `w`, `h`: width and height of the image.
+ * `w`, `h`: width and height of the image.
 
+------------------------------------ -----------------------------------------
 ### `img.compress.[opt]`
 
 Set settings for compress process. `opt` are some options as follow:
-
 
   * `lossless<int>` (default 0):            Lossless encoding (0=lossy(default), 1=lossless).
   * `quality<float>` (default 75):           between 0 and 100. For lossy, 0 gives the smallest
@@ -103,14 +105,17 @@ Set settings for compress process. `opt` are some options as follow:
   * `use_sharp_yuv<int>` (default 0):       if needed, use sharp (and slow) RGB->YUV conversion
   * `outfile<string>` (default nil):  path to file on disk to save.
 
+------------------------------------ -----------------------------------------
 ### `img:get_blob() -> return <string> binary data`
 
 Get image data in binary string after compress process
 
+------------------------------------ -----------------------------------------
 ### `img:save()`
 
 Save image to disk base on img.compress.outfile setting. Must use before get_blob()
 
+------------------------------------ -----------------------------------------
 ## Sample Code
 
 **Nginx Configuration**
